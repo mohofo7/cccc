@@ -25,10 +25,19 @@ ENV CCCC_BROWSER_DEPS="libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 l
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-      curl ca-certificates git bash chromium libstdc++6 \
+      curl ca-certificates git bash chromium libstdc++6 openssh-client \
       ${CCCC_BROWSER_TOOLS} \
       ${CCCC_BROWSER_DEPS}; \
     rm -rf /var/lib/apt/lists/*
+
+# Install GitHub CLI from the official apt repository
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/*
 
 # Reuse the already-pinned Node.js 24 runtime from the Web build stage.
 # This avoids NodeSource/Debian package fallback drift and guarantees npm is present.
@@ -79,6 +88,11 @@ RUN curl -fsSL https://cli.devin.ai/install.sh | bash \
 # Install Antigravity CLI (agy) for the non-root user
 RUN curl -fsSL https://antigravity.google/cli/install.sh | bash \
     && agy --version
+
+# Pre-trust github.com so agent git/ssh commands don't block on the host-key prompt
+RUN mkdir -p /home/cccc/.ssh \
+    && ssh-keyscan github.com >> /home/cccc/.ssh/known_hosts 2>/dev/null \
+    && chmod 700 /home/cccc/.ssh
 
 # Configuration
 ENV CCCC_HOME=/data

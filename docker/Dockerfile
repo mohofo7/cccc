@@ -76,6 +76,10 @@ RUN mkdir -p /home/cccc/.local/bin \
 RUN curl -fsSL https://cli.devin.ai/install.sh | bash \
     && devin --version
 
+# Install Antigravity CLI (agy) for the non-root user
+RUN curl -fsSL https://antigravity.google/cli/install.sh | bash \
+    && agy --version
+
 # Configuration
 ENV CCCC_HOME=/data
 

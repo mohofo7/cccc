@@ -6,6 +6,103 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), and versions
 
 ## [Unreleased]
 
+## [0.4.58]
+
+### Added
+
+- Markdown attachments, and Markdown links opened in the page, switch between the rendered
+  view and the unchanged source without downloading again, with the **View source** /
+  **Preview** control that workspace files already have. The control sits in the title bar
+  of the resource panel, of each side of a split view and of the preview dialog, so a
+  document gets no extra toolbar row.
+- HTML attachments, Group HTML files and HTML from `raw.githubusercontent.com` or
+  `gist.githubusercontent.com` open as a static document preview. Scripts do not run, form
+  controls are disabled and external resources are not loaded; inline styles and embedded
+  images are supported, and the page follows only web, mail and in-page links. An
+  attachment has no directory, so its relative images, stylesheets and sibling files are
+  not resolved. HTML up to 20 MiB previews in full, embedded images included, and
+  **Files** previews HTML over its 1 MiB editing limit the same way, read-only.
+  **View source** shows the first 1 MiB. Larger HTML shows only that source, with a
+  notice, instead of a broken page. Wide slides stacked in a centered column start at the
+  left and scroll sideways; pages keep their own size and are not scaled to fit. Panel tabs restored
+  after a reload keep the HTML kind.
+
+### Fixed
+
+- The keys in an attachment's title bar share one size with the **Files** toolbar, and the
+  download key no longer sticks out of the bar.
+- On a phone, the empty composer at rest keeps attach, the template button, the input and
+  voice on one row; the template button no longer drops to a second line. **Send** returns
+  with the full layout when the input is focused. A send in flight keeps the full layout,
+  so its progress and **Stop waiting for upload** stay visible if focus leaves the
+  composer during an upload.
+
+## [0.4.57]
+
+### Added
+
+- Quick replies of your own, in one list. Settings › Quick Replies keeps up to 24 replies in
+  your order, the four default ones included, each with a name and a text sent exactly as
+  written; add, reword, reorder or delete any of them. A default reply's unchanged name or
+  text follows the interface language, a changed one stays as written, **Restore default**
+  puts it back, and a deleted default can be brought back at the end of the list. A
+  message's quick reply menu sends one at once; the composer's template button opens the
+  list above the input, near where you are typing, and inserts one at the cursor to edit
+  before sending. The daemon keeps one list per signed-in user, so other browsers and phones
+  signed in as that user see the same replies; a browser on this computer that is not
+  signed in has its own.
+- The operations guide lists what a daemon restart keeps and what it does not, with a
+  FAQ entry pointing to it.
+- `cccc_bootstrap` recovery includes the Group brief's last update time
+  (`coordination_brief.updated_at`), so an agent resuming work can see that a brief is
+  old. It is omitted when the brief has no recorded update time.
+
+### Changed
+
+- Reading a parent task through MCP keeps the parent's full details and returns its
+  subtasks as summary rows. Read a subtask by its own ID for its notes and checklist.
+
+### Fixed
+
+- Enabling a capability or calling an external tool no longer holds up other operations
+  while it waits for the external service. Superseded preparation cannot reverse a later
+  disable, and an old call cannot restore a changed binding or installation. Already
+  admitted external calls are never automatically replayed.
+- A cron automation rule that already owes a run, for example one enabled again after
+  missing its time, reports that run as its next fire time instead of the following
+  occurrence, as interval and one-time rules already did. The Web labels that time as
+  pending. The missed run still fires once.
+- The capability page's Enabled count covers all matches of the current search, like the
+  Skills, MCP and Packs counts, instead of only the page on screen. `capability_overview`
+  returns `enabled_count`; the standard now also documents `kind_counts`.
+- MCP recipes that declare `command` as a string or argv array, or a fallback command
+  without a package identifier, install as the published contract describes. A string
+  names one executable and is never split by a shell; arguments need an argv array.
+  Malformed command fields are rejected before the catalog changes.
+- ChatGPT Web members treat `local-chatgpt:` conversation URLs as provisional, like
+  `WEB:` ones, and a conversation moved into a Project keeps its binding and delivery
+  receipts (#226, #227).
+- On Windows, background process constructors now share a no-console-window
+  default, covering the Codex app-server and delivery helper reported in #228,
+  managed Claude launchers, Reach helpers and process checks, Git scope detection,
+  and runtime preparation. Standard streams, timeouts and ownership are unchanged;
+  interactive terminals, foreground maintenance and detached daemon startup retain
+  their policies. Production Clippy and entry-point checks catch bypasses, with
+  explicit reasons for exceptions. The runtime library and its Windows tests
+  were checked for a Windows target on Linux; Windows-only daemon and CLI
+  branches will first be compiled in Windows CI. This release has not been run
+  locally on Windows; the reporter's Codex/Windows Terminal check remains needed.
+- Chet on OpenCode: a message or member result sent while Chet is busy waits for the
+  current turn and goes to Chet's own session as its own turn, instead of being typed
+  into Chet's terminal, where after `/new` it reached another session and held up later
+  Group messages to Chet (#229). Voice delegations during a call are unchanged.
+- The documentation home page's getting-started button links to the page's own address,
+  so opening the link directly no longer returns 404.
+- Web slash commands for capability tools pass their arguments to the tool. They were sent
+  under a field the daemon does not read, so the tool ran without them.
+- The chat composer keeps the highlight of a later @mention when Undo restores a
+  replaced or deleted selection. Who receives the message was not affected.
+
 ## [0.4.56]
 
 ### Added

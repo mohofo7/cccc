@@ -980,6 +980,10 @@ Result:
   has_more: boolean
   domains: Array<{domain_id: string; name: string}> // manifest order
   query: string
+  // Both count every match of `query` not removed for the Group, before the kind,
+  // policy and source filters and paging.
+  kind_counts: {skill: number; mcp: number; pack: number}
+  enabled_count: number // matches in `capability_state` `enabled_capabilities` for `user` in `group_id`
   sources: Record<string, {
     source_id: string
     record_count: number
@@ -1106,6 +1110,14 @@ Notes:
 7. `cleanup` is accepted but currently ignored. Disabling removes the capability from the given scope's
    enablement, but does not clean runtime caches, runtime bindings or installations, and this op returns
    no removal counts. `capability_uninstall` removes a capability from a group and reports what it removed.
+8. The daemon connection prepares a direct enable outside dispatch permits, then rechecks the
+   original port binding, Group/member generation, relevant configuration, recipe, installation
+   and revocation intent before publishing. A later disable, hide, block or uninstall supersedes
+   earlier preparation even if the control already had that value. `capability_conflict` with
+   `details.reason` reports superseded preparation without enabling it; CCCC does not retry it.
+   Equal concurrent first installations may reuse the winner without replacing its tool metadata.
+   This staging applies to direct enable and external tool calls, not import, explicit update,
+   target installation or startup autoload; those paths may still hold permits during external work.
 
 Args:
 ```ts
@@ -1488,7 +1500,14 @@ Notes:
    it is not silently shortened.
 4. `dry_run=true` validates/probes only (no catalog persistence).
 5. `command*` and `fallback_command*` may be provided as top-level shortcuts; daemon copies them into
-   `install_spec` when missing.
+   `install_spec` when missing. A string names one executable, spaces included, and is never split
+   by a shell. Arguments need an argv array: its first item names a non-empty executable, and the
+   later items, empty ones included, are passed as given. Candidates are tried in the order
+   `command_candidates`, `command`, `fallback_command_candidates`, `fallback_command`, and the first
+   one whose executable is available on the daemon host is installed; an absent or null field takes
+   no part. Any other type, an empty argv or a non-string item is rejected. `package` mode runs its
+   package recipe when the registry is supported and the identifier is non-empty, and otherwise the
+   same declared commands. A failed install does not move on to another candidate.
 6. `record.source_id` is optional; empty or unknown source ids are normalized to `manual_import`.
 7. `record.source_id=agent_self_proposed` preserves autonomous skill-proposal provenance. Default policy treats
    `kind=skill` capsule records from this source as mounted, while non-skill toolpacks remain indexed unless
@@ -1909,6 +1928,12 @@ An unchanged fingerprint returns `unchanged` without running an installer.
 
 #### `capability_tool_call`
 
+With `capability_id` and no non-empty string `tool_name`, read the complete capability
+record without enabling it, installing it or calling an external tool. This ID form
+returns `{ capability, input, ready: true }`, where `input` echoes the supplied value
+(or null when omitted). It keeps the ordinary Group write dispatch permit; it does not
+perform external work.
+
 Invoke an enabled dynamic external capability tool by synthetic tool name.
 The inner `arguments` object is forwarded unchanged. CCCC identity and binding
 metadata travel only in the outer envelope; external parameters may themselves
@@ -1920,18 +1945,22 @@ Args:
   group_id: string
   actor_id?: string
   by?: string
-  tool_name: string // an advertised external name, or the real name when capability_id is explicit
-  capability_id?: string // scopes real-name resolution and discovery after a cold member cache
+  tool_name?: string // required for a tool call: advertised name, or real name with capability_id
+  capability_id?: string // required for the ID read; otherwise scopes real-name resolution and cold discovery
+  input?: unknown // echoed only by the ID read
   arguments?: Record<string, unknown>
 }
 ```
 
-Result:
+Tool-call result:
 ```ts
 {
   tool_name: string
   capability_id: string
   result: Record<string, unknown>
+  real_tool_name?: string
+  state_update_skipped?: boolean
+  state_update_skipped_reason?: string
   avoid_when?: string[] // CCCC's release recommendation notes, outside the upstream result
   gotchas?: string[]
   requirements_summary?: string
@@ -1957,6 +1986,19 @@ real name does not gain access to another capability by this rule. The bridge's
 `cccc_capability_use` may reuse its existing unique capability inference; a name
 found in multiple capabilities still requires an explicit `capability_id`. CCCC
 core and built-in pack names take precedence over unqualified external names.
+
+External discovery and the tool call run outside the Group/global dispatch permits. Cold
+member discovery is authorized again before any business call. Once admitted, a call is
+never automatically replayed, including after transport failure or concurrent revocation.
+On return, CCCC rechecks the original authority and conditionally records verification and
+recent-success metadata. If the same caller remains valid but the binding, credential,
+configuration or installation changed, the actual result is returned with
+`state_update_skipped=true` and a non-secret `state_update_skipped_reason`; old metadata is
+not published. MCP `cccc_capability_use` preserves these fields and does not label that
+binding `verified`. A replaced Group/member or invalid port binding receives a permission
+error instead of the original caller's result. Errors after business-call admission carry
+`details.external_action_may_have_occurred=true` and `details.automatic_retry=false`:
+absence of a result does not establish that the external action did not happen.
 
 #### `group_show`
 
@@ -3946,6 +3988,12 @@ Notes:
   while the Group is paused or stopped, or while the built-in `standup` is
   suppressed by an idle Group. This uses the daemon Group state, not the Web
   activity projection. Disabled or completed rules have no suppression reason.
+- For a rule that is already due, `next_fire_at` is the time its firing was
+  owed, at or before `server_now`. This happens, for example, when an interval
+  or cron rule is enabled again with a clock older than its latest occurrence.
+  It fires once, not once per missed occurrence, on the first tick that can
+  carry it out; until then, for example while a notify rule's `to` matches no
+  enabled actor, it keeps reporting that time.
 - `group.yaml:automation` and `state/automation.json` are the shared config and
   runtime authorities. The single-daemon process lock owns scheduling; engine
   handoff consumes these files and does not introduce a second scheduler lease
@@ -4368,7 +4416,8 @@ Notes:
 - Codex, Grok, OpenCode and Kilo Actor startup with a validated saved conversation MUST NOT replace that conversation after a resume failure. CCCC MUST retain the provider identity, safe diagnostic and attempt-fenced failure count, project `runtime_session_status="resume_failed"` / `runtime_session_resume_eligible=false`, and leave undelivered messages pending outside the automatic startup retry lane. Paused startup returns `runtime_resume_failed`. Explicit `actor_start` / `actor_restart` MAY retry the same identity; only New session, disabled resume or a changed validated launch identity selects fresh work. Successful resume clears the diagnostic. An unresolved process-cleanup error MUST preserve its ownership and remain distinct from an ordinary paused resume.
 - When managed Actor startup begins a new conversation while the receipt of an earlier saved conversation is still present, CCCC MUST keep that fact on the new receipt and project it in the Actor listing as `runtime_session_replaced_at` (when CCCC recorded that replacement, not when the provider created either conversation) and `runtime_session_replaced_reasons` (array of strings); both are `null` otherwise. Each reason names a compared receipt field that differs: `runtime`, `transport`, `record_version`, `workspace`, `command`, `model`, `launch_path`, `cccc_cli` or `launch_identity`. `launch_identity` covers the resolved launch settings and launch environment, which for some runtimes includes values inherited from the daemon process. Where a runtime's receipt compares that environment as a whole, CCCC MAY name a changed launch `PATH` as `launch_path` and a changed `CCCC_CLI` value as `cccc_cli`, and then reports `launch_identity` only when something else in the launch changed as well. It can do so only from a split of the compared launch fingerprint that both receipts recorded: when either receipt's split is missing, incomplete or of a format CCCC does not recognize, or when no part of it accounts for the difference, CCCC MUST report `launch_identity` instead, so `launch_identity` alone MAY still stand for either. The list is open, so consumers MUST ignore values they do not know, and it MAY be empty. A different runtime or transport is reported alone, because the remaining fields do not compare across them. The projection stays until New session or the next replacement; a successor of a session that never received a prompt keeps it unchanged. First start, New session, disabled resume, and a saved session whose receipt records that it never received a prompt MUST NOT produce it. Once the launch that recorded it is attached, CCCC SHOULD append one `system.notify` to the Group ledger with `kind: "info"`, `to: ["user"]`, `im_visibility: "public"` and `context: {kind: "runtime_session_replaced", member, replaced_at, reasons}`. That notice is best effort and is not repeated by later starts. It is addressed only to the user and MUST NOT be routed to Actor inboxes. It states that a saved conversation was not resumed, not that the conversation held work. The earlier provider session ID stays in the receipt and MUST NOT appear in the listing. This record does not change which conversation a start selects.
 - Managed runtime startup MAY synchronously enumerate the injected actor-scoped CCCC MCP tools before its provider session becomes ready. That catalog discovery MUST use `capability_state` with `view="mcp_catalog"` so it cannot wait on the same Group lifecycle lock held by `actor_start`; ordinary capability reads remain serialized normally.
-- For Codex, Claude, Grok, OpenCode, and Kilo Actors, CCCC MUST hand an incoming Actor delivery to the writable native TUI as soon as that terminal is ready. CCCC MUST NOT inspect provider busy state to choose `steer` versus `queue`, and MUST NOT hold the delivery until the current turn settles. The receiving Runtime owns that policy according to its own configuration. `runtime.delivery=accepted` means the canonical input and submit sequence were written successfully to the Runtime terminal; it does not claim that the provider completed or semantically accepted the work. Structured protocols remain authoritative for session identity, lifecycle, progress, completion, cancellation, and Voice Analyst delegation.
+- OpenCode Actor delivery follows the bound HTTP durable-queue rule above; its native TUI is a view of that owned backend. For Codex, Claude, Grok, and Kilo Actors, CCCC MUST hand an incoming Actor delivery to the writable native TUI as soon as that terminal is ready. CCCC MUST NOT inspect provider busy state to choose `steer` versus `queue`, and MUST NOT hold the delivery until the current turn settles. The receiving Runtime owns that policy according to its own configuration. `runtime.delivery=accepted` means the canonical input and submit sequence were written successfully to the Runtime terminal; it does not claim that the provider completed or semantically accepted the work. Structured protocols remain authoritative for session identity, lifecycle, progress, completion, cancellation, and Voice Analyst delegation.
+- OpenCode-backed Chet text inputs, Group inputs and Actor-result notifications MUST use the existing host FIFO and the bound HTTP session, including while another turn or its admission is pending. Each keeps its own correlation and turn; it MUST NOT fall back to typing into the visible TUI, whose selected chat may have changed. Later Chet inputs wait for the current turn instead of steering it. This scheduling policy does not remove the native terminal or change Realtime Voice delegation admission, other runtimes or ordinary Actor delivery. Queue acceptance is not provider completion; unresolved admission MUST retain the existing invalidation and no-replay behavior.
 - In assistant mode, Realtime Voice owns the intent decision to create a Voice Analyst delegation; it does not own provider scheduling. For a Runtime with a native terminal or verified steering surface, once `delegation.created` exists, CCCC MUST immediately hand the exact correlated input to the managed Runtime and MUST NOT hide it in a server-side wait-for-idle queue. An active Runtime with a verified exact-turn steer operation MAY receive the input through that operation; otherwise CCCC MUST write the exact payload and submit sequence to the same verified native terminal session, after which the Runtime owns the steer-versus-queue decision. CCCC MUST register correlation before the write, project whichever authoritative turn consumes it, and report success only after the Runtime control operation or complete terminal submit sequence was accepted. A missing, closed, or rejecting Runtime input path MUST return an explicit delivery error; busy state alone MUST NOT drop, delay, merge, or reject the delegation.
 - Voice instructions MUST ask for a concise, self-contained handoff preserving confirmed targets, outcomes, explicit limits, uncertainty and latest corrections. A missing essential reference calls for a focused clarification; a clear request needs no cosmetic rewrite. The browser's explicit `provider_event` frame MAY attach `context: {messages: [{role: "user" | "assistant", text: string, incomplete?: boolean}], truncated?: boolean}`. This is an immutable excerpt from the same audio call, bounded to 12 nonempty messages and 8,192 total UTF-8 text bytes, independent of the provider request's existing limit. Unknown fields/roles and oversized or malformed context MUST be rejected before Analyst admission, with a negative Grok tool receipt when applicable; private text MUST NOT enter diagnostics. The browser retains bounded recent snapshots so late ASR changes do not alter a pending delegation's repeated frame. Context is quoted evidence for understanding that request, never extra tasks, a tool grant, a selected Group, or user authorization from assistant/Actor speech. CCCC MUST preserve the provider request and its identity, apply existing call-generation fencing, admission, steering, queuing and cancellation, and retain server-owned host application context. Transcript updates alone MUST NOT start work. Mark clipped history and drafts; the Analyst MUST preserve relevant user constraints and ask when missing essential intent changes the work. Neither a new model call nor a second task system is implied. Persona ignores the entire frame before parsing context.
 - The Web Voice start contract MAY carry optional immutable `application_context` with a validated 1–128-byte ASCII identifier and nonempty UTF-8 instructions up to 24 KiB (24,576 bytes) in both assistant and persona modes. This is a local input size limit, not a provider token budget. CCCC MUST reject oversized instructions without truncating them and MUST preserve accepted text exactly; provider limits still apply. In assistant mode, CCCC MUST include it in Realtime startup instructions and each Voice delegation delivered to the Analyst, without changing the provider delegation ID or at-most-once admission. Start idempotence MUST include the entire validated context, including mode; changed context MUST NOT reuse an active call. Context MUST NOT be interpreted as authentication, a selected Group, or a tool grant, and MUST NOT implicitly reset the persistent Analyst. Embedded assistant expression (language, length, tone, and user-facing attribution labels) MUST follow the host instructions without appending global expression preferences. Assistant calls, including embedded calls, retain provider automatic acknowledgement filler and client delegation. A brief receipt acknowledges hearing the request without waiting for Analyst completion; it MUST NOT claim execution succeeded. Host expression policy governs wording and avoids repeated receipt narration. Omission preserves global Voice behavior. Arbitrary context text MUST NOT appear in startup diagnostics.
@@ -5501,6 +5550,110 @@ same path accepts `{ event_id, pinned }`; either accepts `detail=ids` as a query
 parameter.
 Web clients reload the state when entering a Group or returning to a visible
 page, so two continuously visible clients do not promise immediate updates.
+
+#### `quick_reply_templates_get`
+
+Return one person's ordered quick replies. This is a user operation: `by` may
+be omitted or `user`; an Actor, `system` or another value is rejected with
+`permission_denied`. The owner is `caller_id`, which the Web port sets to the
+signed-in access identity's `user_id` (`local` for the loopback administrator);
+a request without `caller_id` reads the `local` list. Replies are global to the
+instance, not per Group.
+
+```ts
+{
+  by?: "user"
+  caller_id?: string
+}
+```
+
+Result:
+```ts
+{
+  replies: Array<
+    { builtin: "proceed" | "why" | "rethink" | "choices", name?: string, text?: string }
+    | { id: string, name: string, text: string }
+  > // complete display order; defaults and personal replies may be interleaved
+  revision: number // 0 before the first save
+  updated_at: string // empty before the first save
+  limit: number // 24, including default replies
+}
+```
+
+A default's `builtin` identifies its original content in the Web. An absent
+`name` or `text` uses that field's default in the interface language; a present
+field is the person's override, never translated. A personal reply's `name`
+and `text` are always returned as written. Names and texts from the default
+catalog are not stored or translated by the daemon.
+
+Before a person's first save, the list contains the four unmodified defaults in
+this order: `proceed`, `why`, `rethink`, `choices`. An explicitly saved empty list
+stays empty. Reads never create or rewrite the file. Earlier saved records
+without an explicit order retain their visible defaults first and personal
+replies in their original order, including any overrides and hidden defaults.
+An unreadable store returns `quick_reply_templates_invalid` instead of an empty
+list.
+
+#### `quick_reply_templates_set`
+
+Replace the caller's complete visible list, in array order. The same user
+restriction and owner rules as `quick_reply_templates_get` apply, and the result
+has the same shape.
+
+```ts
+{
+  by?: "user"
+  caller_id?: string
+  if_revision: number // the revision last read
+  replies: Array<
+    { builtin: "proceed" | "why" | "rethink" | "choices", name?: string, text?: string }
+    | { id?: string, name: string, text: string }
+  >
+}
+```
+
+- `if_revision` is required. When the stored revision differs, the call fails
+  with `quick_reply_templates_conflict` and `details.revision`, so a save from
+  another browser is reported instead of overwritten.
+- `replies` is required and must be an array. `[]` removes every reply; a missing
+  value or `null` returns `invalid_args`, not an empty list. The request no longer
+  uses separate `templates` and `builtins` fields.
+- Each default kind may occur once. Personal IDs must be unique. There are at
+  most 24 visible replies in total; removing a default frees a place for another
+  reply. The array order is used in Settings, the message menu and the composer.
+- A default accepts only `builtin`, `name` and `text`; a personal reply accepts
+  only `id`, `name` and `text`. Unknown fields, mixed identities, unknown default
+  kinds, wrong types and explicit `null` fields return `invalid_args`.
+- A name is trimmed and is 1–40 Unicode code points on one line. A text is stored
+  and returned exactly as written, including line breaks and indentation; it is
+  at most 10,000 code points, counted as stored, and not only white space. These
+  rules apply to a default's present overrides as well as personal replies.
+  A personal `id` is 1–64 ASCII letters, digits, `_` or `-`; a missing `id` is
+  generated. Any violation refuses the entire save and changes nothing.
+- Leaving out a default removes it from the visible list while preserving its
+  earlier stored overrides privately. A present default replaces its overrides
+  with the optional `name` and `text` in that entry. Keeping only `{ builtin }`
+  restores that one entry to its defaults without moving it; appending such an
+  entry adds a removed default back at the end, without changing other replies.
+  A personal reply absent from the array is deleted.
+- Saving an identical list returns the current revision unchanged and does not
+  rewrite the file merely to add an explicit order. Any changed save, including
+  removing every reply, advances the revision by one.
+- An unreadable store returns `quick_reply_templates_invalid` and is not written
+  over, including when the invalid record belongs to another identity.
+
+On the Web, `GET /api/v1/quick-reply-templates` reads the signed-in identity's
+list and `PUT` to the same path accepts `{ if_revision, replies }`. Every
+authorized Web identity, administrator or not, reaches only its own list;
+Exhibit Web and Actor ports do not expose it. A message's quick reply menu sends
+one entry's text immediately without touching the composer's draft, attachments
+or reply target. The composer's template button inserts the text at the
+remembered caret, replacing a selection as typing would, and leaves the rest of
+the draft in place. Both use the same saved order, with neither a fixed default
+section nor separate quotas. Each reads the list again when opened and shows
+the result once that read succeeds; a failed refresh keeps the last valid list.
+Until a first read succeeds, neither offers defaults in place of unknown saved
+replies or removals.
 
 
 #### `send`
@@ -6815,6 +6968,10 @@ Notes:
   `assignee` and `attention`. `limit` (rows, default 50, 1..100) and `offset`
   (default 0) apply after the status filter; a caller paging on restarts from offset 0
   when `tasks_version` changes.
+- With `task_id`, MCP `cccc_task` keeps the selected task in full and projects each
+  entry of `children` as the same summary row. A non-empty child list adds the same
+  `note`. Read a subtask's notes and checklist with its own `task_id`. The daemon's
+  response and Web task tree retain full child records.
 - For MCP task lists, a null or blank `task_id` counts as omitted and list filters
   remain in effect; a non-string, non-null value fails with `invalid_args`.
 - Filters are applied before pagination. Planned tasks sort newest-created first;

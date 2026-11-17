@@ -47,18 +47,14 @@ When several coding agents share work, you need to know who owns a task, whether
 - **CCCC Connect** links Groups across machines and teams; each instance keeps its own state.
 - **Local-first.** Runtime state stays in `CCCC_HOME` (default `~/.cccc/`), outside your repository.
 
-## What's new in 0.4.56
+## What's new in 0.4.58
 
-- **A short capability list chosen for agents' work.** CCCC ships 10 skills and MCP servers that we tried on that work ourselves, in four work groups, each with the reason it is listed, when not to use it and how far we checked it. Exa is the one primary, for facts where an agent's own search finds no credible source; the others are alternatives.
-- **See who can use what.** The capability page shows, for each member of a Group, whether it can use an entry or what it needs first. An agent that uses a recommended entry also gets our notes on when not to use it. An agent can browse the recommended entries when a task needs one, with when each fits and any setup it needs; bootstrap also gives a short index of them.
-- **Member tokens for remote MCP servers.** A managed agent can use a server that needs a token, with the token from its own private settings or linked Profile.
-- **Recipe updates from CCCC Web.** An administrator can update an installed MCP server for all Groups after confirming.
-- **Steadier MCP servers.** Remote and local servers run on the official Rust MCP SDK. A local server's errors now include the end of its error output, with known credentials and declared environment values removed.
-- **Claude Code agents that CCCC starts** no longer load the CCCC plugin meant for sessions you start yourself.
+- **Read documents in the page.** Markdown attachments switch between the rendered view and their unchanged source without downloading again. HTML attachments, Group HTML files and HTML from the raw GitHub and gist hosts open as a static preview: scripts do not run, forms are disabled and external resources are not loaded. HTML up to 20 MiB previews in full, embedded images included.
+- **One row for the phone composer.** At rest, the empty composer keeps attach, the template button, the input and voice on one row, so the template button no longer drops to a second line. A send in flight keeps its progress and **Stop waiting for upload** in view.
 
-**Upgrade notes.** Before upgrading, let sends and recordings finish, restore or discard waiting sends, then send or copy every unsent draft and save unsaved edits in Files: all of these live only in the open page. Check whether a message already arrived before sending it again. Then restart the daemon and Web and reload open pages. Restart native sessions to give them the new tool descriptions: `cccc_capability_search` no longer returns a skill's text, which agents now read with `cccc_capability_use`.
+**Upgrade notes.** Before upgrading, let sends and recordings finish, restore or discard waiting sends, then send or copy every unsent draft and save unsaved edits in Files: all of these live only in the open page. Then restart the daemon and Web and reload open pages. A daemon restart still stops the agents that CCCC started.
 
-Details: [0.4.56 release notes](https://chesterra.github.io/cccc/release/v0.4.56_release_notes).
+Details: [0.4.58 release notes](https://chesterra.github.io/cccc/release/v0.4.58_release_notes).
 
 ## Quick start
 

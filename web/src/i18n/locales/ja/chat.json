@@ -620,6 +620,13 @@
     "unknown": "クイック返信が送信されたか確認できませんでした。先にメッセージを確認してください。再試行すると重複して送信される場合があります。",
     "retry": "再試行"
   },
+  "replyTemplates": {
+    "button": "テンプレートを挿入",
+    "filter": "名前で絞り込み",
+    "none": "一致するテンプレートはありません",
+    "manage": "テンプレートを管理",
+    "unavailable": "クイック返信を読み込めませんでした"
+  },
   "download": "{{name}} をダウンロード",
   "openImagePreview": "画像プレビューを開く: {{name}}",
   "imagePreviewDialog": "画像プレビュー",
@@ -638,6 +645,8 @@
   "documentPreviewDialog": "ファイルのプレビュー",
   "documentPreviewFailed": "このファイルを読み込めませんでした。ダウンロードはできます。",
   "documentPreviewTruncated": "最初の 1 MiB のみ表示しています。",
+  "documentHtmlStatic": "静的プレビュー · スクリプトとフォームは無効です。外部リソースは読み込まず、インラインスタイルと埋め込み画像に対応しています。",
+  "documentHtmlTruncated": "HTML が 20 MiB のプレビュー上限を超えています。先頭 1 MiB のソースのみを表示します。",
   "linkPreviewFailed": "このリンクはここでは表示できません。新しいタブで開いてください。",
   "showObligationStatusCounts": "返信ステータスを表示：返信済み {{replied}}/{{total}}",
   "showObligationStatusCancelled": "返信ステータスを表示：返信済み {{replied}}/{{total}}、取り消し済み {{cancelled}}",

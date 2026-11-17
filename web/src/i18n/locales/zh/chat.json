@@ -620,6 +620,13 @@
     "unknown": "暂时无法确认快速回复是否已发出。请先查看消息；重试可能会重复发送。",
     "retry": "重试"
   },
+  "replyTemplates": {
+    "button": "插入模板",
+    "filter": "按名称筛选",
+    "none": "没有匹配的模板",
+    "manage": "管理模板",
+    "unavailable": "暂时读不到快速回复"
+  },
   "download": "下载 {{name}}",
   "openImagePreview": "打开图片预览：{{name}}",
   "imagePreviewDialog": "图片预览",
@@ -638,6 +645,8 @@
   "documentPreviewDialog": "文件预览",
   "documentPreviewFailed": "这个文件加载失败，你仍可以下载。",
   "documentPreviewTruncated": "只显示前 1 MiB。",
+  "documentHtmlStatic": "静态预览 · 禁用脚本与表单，不加载外部资源。支持内联样式和内嵌图片。",
+  "documentHtmlTruncated": "HTML 超出 20 MiB 预览上限，仅显示前 1 MiB 源码。",
   "linkPreviewFailed": "这个链接无法在这里显示，请在新标签页打开。",
   "showObligationStatusCounts": "查看回复状态：已回复 {{replied}}/{{total}}",
   "showObligationStatusCancelled": "查看回复状态：已回复 {{replied}}/{{total}}，已取消 {{cancelled}}",

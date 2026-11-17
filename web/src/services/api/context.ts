@@ -377,6 +377,8 @@ export async function fetchCapabilityOverview(opts?: {
     has_more: boolean;
     query?: string;
     kind_counts?: { skill?: number; mcp?: number; pack?: number };
+    /** Matches of the query enabled for the user in the Group, across every page. */
+    enabled_count?: number;
     sources?: Record<string, CapabilitySourceState>;
     blocked_capabilities?: CapabilityBlockEntry[];
     allowlist_revision?: string;
@@ -571,7 +573,7 @@ export async function useGroupCapability(
     reason: args.reason || "",
   };
   if (String(args.toolName || "").trim()) body.tool_name = String(args.toolName || "").trim();
-  if (args.toolArguments) body.tool_arguments = args.toolArguments;
+  if (args.toolArguments) body.arguments = args.toolArguments;
   clearCapabilityStateRequests(groupId);
   try {
     return await apiJson<Record<string, unknown>>(

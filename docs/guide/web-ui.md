@@ -271,7 +271,7 @@ Collapse returns to the compact rail; closing the sidebar only hides it and keep
 ### Resource panel
 
 Workspace files (from **Files**, a path in a message, or a link inside a document), message
-attachments (images, videos, Markdown, text and PDF) and Presentation slots (from the slot list or
+attachments (images, videos, Markdown, static HTML, text and PDF) and Presentation slots (from the slot list or
 a message's reference) open as tabs in one panel. Opening something that is already open selects
 its tab. Each Group keeps its own tabs. Refreshing the same browser tab restores their order,
 selection, side-by-side layout, and whether the panel was collapsed or maximized, when browser
@@ -551,12 +551,16 @@ Markdown renders with tables and Mermaid diagrams. CSV and TSV files open as tab
 including quoted cells and multiline values; the preview shows up to 200 rows and
 50 columns. Text-sized SVG, Markdown, CSV/TSV and HTML offer **View source** and
 **Preview**. Switching views preserves unsaved edits, and preview uses the current
-draft. The text/source limit remains 1 MiB. Downloads always contain the saved file.
+draft. The editor and the text view hold at most 1 MiB. HTML above that editing
+limit, up to 20 MiB, is read in full for **Preview**, while **View source** shows its
+first 1 MiB; the file stays read-only. Larger HTML shows its first 1 MiB as source
+only. Downloads always contain the saved file.
 
 HTML opens as a static, isolated document: scripts, forms, nested pages and linked
 stylesheets are disabled. Inline styles and workspace image/audio/video resources
-are supported; it is not a running website or application preview. Markdown and HTML
-resolve relative file links within the opened workspace and open them in Files.
+are supported; it is not a running website or application preview. Pages keep their
+own size and margins: wide slides stacked in a centered column start at the left and
+scroll sideways. Markdown and HTML resolve relative file links within the opened workspace and open them in Files.
 Section fragments such as `report.md#details` or `report.html#details` position the
 loaded preview at that section, including repeated same-file links. Positioning
 happens once per navigation; ordinary updates do not pull the reader back. A PDF
@@ -1235,9 +1239,18 @@ panel returns to the message. Downloads remain available when the browser cannot
 video. Confirmed uploads play and download from the Group's stored blob, so they remain
 available after the local upload preview expires.
 
-Markdown, PDF and common text files open in the panel when you click their name; their
-download sits next to it. Markdown is rendered, and text and logs stay plain. A long file
-shows its first 1 MiB. PDF uses the browser's own viewer, or CCCC's reader on touch devices and
+Markdown, HTML, PDF and common text files open in the panel when you click their name; their
+download sits next to it. Markdown renders by default; **View source** and **Preview** switch
+between its unchanged text and rendered view without downloading it again. Text and logs stay
+plain. HTML uses the same controls and opens as a static document: scripts, forms and external
+resources are disabled; inline styles and embedded images are supported. Links can be opened
+explicitly. An attachment has no directory for relative images, stylesheets or sibling files;
+it is not a running website or application preview. Download the original when you need those.
+A long Markdown or text file shows its first 1 MiB, and so does the source view of a long
+HTML file. HTML up to 20 MiB renders in full; larger HTML shows its first 1 MiB as source
+only. As in Files, wide slides stacked in a centered column start at the left and scroll
+sideways.
+PDF uses the browser's own viewer, or CCCC's reader on touch devices and
 in browsers without one, as for [workspace files](#workspace-files). Where neither can show it,
 download it or, unless CCCC is embedded through Connect, open it in a new tab. Other files stay
 downloads.
@@ -1254,7 +1267,7 @@ try it again, and its download remains available.
 An address that starts with `http://`, `https://` or `www.` is a link. Links to an image, audio
 or video file open a page-level preview and load only when you click them. Whether they show
 depends on the source and the browser, so the preview offers a way to open the original in a new
-tab. Markdown and text from `raw.githubusercontent.com` or `gist.githubusercontent.com` also
+tab. Markdown, static HTML and text from `raw.githubusercontent.com` or `gist.githubusercontent.com` also
 open there, as do full links to this site's Group files, with a download. Other links, including
 a PDF on another site, open in a new tab. Ctrl, ⌘, Shift and the middle button keep their usual
 behavior.
@@ -1306,13 +1319,39 @@ For concrete delegated work that needs an owner, done criterion, evidence, hando
 Choose **Reply** on a message to quote it and reply in the composer.
 
 **Quick reply**, in the **More** menu of a message from one of the Group's agents, sends a ready
-reply at once without the composer: **Agree, go ahead**, **Explain why**, **Try another way** or
-**Give me choices**, each led by an emoji under the caption **Quick reply · sends immediately**.
-It goes to that agent alone, quotes the message, and a notice confirms it.
-Chet's messages, messages from or sent to another Group or CCCC instance and
-questions answered in their own card have no quick replies; reply to them in the composer. When
-CCCC cannot confirm that a quick reply was sent, the notice says so and offers **Retry**; check
-the messages first, because a retry can send the reply twice.
+reply at once without the composer, under the caption **Quick reply · sends immediately**. It
+goes to that agent alone, quotes the message, and a notice confirms it. Chet's messages,
+messages from or sent to another Group or CCCC instance and questions answered in their own card
+have no quick replies; reply to them in the composer. When CCCC cannot confirm that a quick reply
+was sent, the notice says so and offers **Retry**; check the messages first, because a retry can
+send the reply twice.
+
+The menu lists your quick replies in the order you saved them. A new list starts with four
+default replies, **Agree, go ahead**, **Explain why**, **Try another way** and **Give me
+choices**, each led by an emoji. Manage the list in **Settings › This instance › Quick Replies**:
+add, edit, reorder or delete up to 24 replies, the default ones included, each with a name and a
+text that is sent exactly as written, then **Save**. A default reply's name or text that you
+leave unchanged follows the interface language; one you change stays as written in every
+language, and the reply is shown without its emoji. **Restore default** puts a changed default
+reply back as it was, and a deleted one can be brought back from the same page: it returns at
+the end of the list, as its default, without changing the other replies. If the list was saved
+from another window or device in the meantime, your edits stay on screen and **Reload** replaces
+them with the saved list.
+
+Each time you open the menu or the template list, it reads your replies again and shows a change
+saved on another device once that read succeeds; if the read fails, it keeps what it showed.
+Before the first read succeeds, neither offers a reply; if that read fails, they say so, and
+opening them again tries again.
+
+To start from a reply and edit it first, use **Insert a template** next to **Attach file** in
+the composer. Pick one of your quick replies, filtering by name if you like, and its text is
+inserted at the cursor, replacing any selected text. The list opens above the input, near where
+you are typing, or across the input on a phone, and each row shows the name and the first
+non-empty line of the text. **Manage templates** at the bottom of the list opens the settings
+page.
+
+The daemon keeps your quick replies for each signed-in user: browsers and phones signed in as the
+same user see the same replies, and a browser on this computer that is not signed in has its own.
 
 ## Project Context
 

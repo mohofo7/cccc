@@ -21,9 +21,11 @@ services:
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
-      # Referenced by ~/.factory/settings.json customModels (${FACTORY_API_URL} / ${FACTORY_API_KEY})
-      - FACTORY_API_URL=${FACTORY_API_URL:-}
-      - FACTORY_API_KEY=${FACTORY_API_KEY:-}
+      # Referenced by ~/.factory/settings.json customModels (${OMNI_API_URL} / ${OMNI_API_KEY}).
+      # Do not name these FACTORY_*: droid reserves FACTORY_API_KEY/FACTORY_API_URL
+      # for its own Factory backend authentication.
+      - OMNI_API_URL=${OMNI_API_URL:-}
+      - OMNI_API_KEY=${OMNI_API_KEY:-}
 
 volumes:
   cccc-data:

@@ -19,7 +19,7 @@ Guide the user step-by-step through Docker deployment. Ask questions interactive
 ## What you're deploying
 CCCC is a multi-agent collaboration hub. The Docker image includes the native
 CCCC executable, Node.js 24, and pre-installed AI agent CLIs (Claude Code,
-Codex CLI, Factory CLI).
+Codex CLI, OpenCode).
 
 ## Step 1: Get the source code
 Ask: "Do you already have the CCCC repo cloned? If yes, what's the path?"
@@ -315,7 +315,7 @@ The Docker image includes:
 | Node.js 24 | Agent CLI runtime (npm-based tools) |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | Anthropic's AI coding agent |
 | [Codex CLI](https://github.com/openai/codex) | OpenAI's AI coding agent |
-| [Factory CLI](https://www.factory.ai/) | Factory's AI coding agent |
+| [OpenCode](https://opencode.ai/v2/docs/) | Open source AI coding agent (V2) |
 | Git | Version control |
 
 ## Next Steps

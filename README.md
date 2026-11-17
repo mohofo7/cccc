@@ -343,7 +343,7 @@ cd cccc
 
 On Windows, use the `x86_64-pc-windows-msvc` toolchain and run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1`. For a debug build, run `cargo run --locked --features standalone -p cccc --bin cccc -- --port 0`.
 
-**Docker.** Run `docker compose up -d` in [`docker/`](docker/), then create an Admin Access Token in **Settings → This instance → Web Access** before exposing it beyond localhost. The image includes Claude Code, Codex CLI and Factory CLI.
+**Docker.** Run `docker compose up -d` in [`docker/`](docker/), then create an Admin Access Token in **Settings → This instance → Web Access** before exposing it beyond localhost. The image includes Claude Code, Codex CLI and OpenCode.
 
 **Older versions.** CCCC v0.4.37 is the last release for Intel Macs. The tmux-first 0.3.x line is archived at [cccc-tmux](https://github.com/ChesterRa/cccc-tmux); uninstall it through its package manager before installing 0.4.x, and keep your data, because reinstalling does not convert 0.3.x sessions into Groups. `cccc python`, `cccc rust` and the `ccccd` alias are retired; use `cccc daemon …`.
 

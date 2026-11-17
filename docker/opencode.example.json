@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omni/your-model-id-on-the-gateway",
+  "providers": {
+    "omni": {
+      "name": "Omni Route",
+      "env": ["OMNI_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "{env:OMNI_API_URL}"
+      },
+      "models": {
+        "your-model-id-on-the-gateway": {
+          "name": "Omni Route"
+        }
+      }
+    }
+  }
+}

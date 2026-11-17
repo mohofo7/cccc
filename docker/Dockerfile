@@ -56,7 +56,8 @@ RUN curl -fsSL https://claude.ai/install.sh | bash \
 # Install other CLI tools via npm
 RUN npm install -g \
     @openai/codex \
-    @factory/cli
+    @opencode/cli@2.2.7 \
+    && opencode --version
 
 COPY --from=rust-builder /src/target/release/cccc /usr/local/bin/cccc
 

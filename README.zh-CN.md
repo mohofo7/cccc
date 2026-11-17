@@ -342,7 +342,7 @@ cd cccc
 
 在 Windows 上，请使用 `x86_64-pc-windows-msvc` 工具链，并运行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1`。调试构建请运行 `cargo run --locked --features standalone -p cccc --bin cccc -- --port 0`。
 
-**Docker**：在 [`docker/`](docker/) 中运行 `docker compose up -d`；把它开放到 localhost 以外之前，先在**设置 → 整个实例 → Web 访问**中创建管理员访问令牌。镜像内置 Claude Code、Codex CLI 和 Factory CLI。
+**Docker**：在 [`docker/`](docker/) 中运行 `docker compose up -d`；把它开放到 localhost 以外之前，先在**设置 → 整个实例 → Web 访问**中创建管理员访问令牌。镜像内置 Claude Code、Codex CLI 和 OpenCode。
 
 **旧版本**：CCCC v0.4.37 是最后一个支持 Intel Mac 的版本。以 tmux 为核心的 0.3.x 系列已归档到 [cccc-tmux](https://github.com/ChesterRa/cccc-tmux)；安装 0.4.x 之前，请通过它的包管理器卸载旧版，并保留你的数据，因为重新安装不会把 0.3.x 的会话转换成工作组。`cccc python`、`cccc rust` 和 `ccccd` 别名已退役，请改用 `cccc daemon …`。
 

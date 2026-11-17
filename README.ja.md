@@ -343,7 +343,7 @@ cd cccc
 
 Windows では `x86_64-pc-windows-msvc` ツールチェーンを使い、`powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1` を実行します。デバッグビルドには `cargo run --locked --features standalone -p cccc --bin cccc -- --port 0` を使います。
 
-**Docker**：[`docker/`](docker/) で `docker compose up -d` を実行します。localhost の外に公開する前に、**設定 → このインスタンス → Web アクセス** で管理者アクセストークンを作成してください。イメージには Claude Code、Codex CLI、Factory CLI が入っています。
+**Docker**：[`docker/`](docker/) で `docker compose up -d` を実行します。localhost の外に公開する前に、**設定 → このインスタンス → Web アクセス** で管理者アクセストークンを作成してください。イメージには Claude Code、Codex CLI、OpenCode が入っています。
 
 **旧バージョン**：Intel Mac 向けの最後のリリースは CCCC v0.4.37 です。tmux を中心にした 0.3.x 系は [cccc-tmux](https://github.com/ChesterRa/cccc-tmux) にアーカイブされています。0.4.x をインストールする前に、0.3.x をそのパッケージマネージャーでアンインストールしてください。再インストールしても 0.3.x のセッションはグループに変換されないため、データは残しておいてください。`cccc python`、`cccc rust`、`ccccd` エイリアスは廃止されました。`cccc daemon …` を使ってください。
 

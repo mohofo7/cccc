@@ -14,13 +14,18 @@ services:
       - "127.0.0.1:${CCCC_PORT:-8848}:8848"
     volumes:
       - cccc-data:/data
+      - cccc-home:/home/cccc
       - ${WORKSPACE_PATH:-.}:/workspace
     environment:
       - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-}
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      # Referenced by ~/.factory/settings.json customModels (${FACTORY_API_URL} / ${FACTORY_API_KEY})
+      - FACTORY_API_URL=${FACTORY_API_URL:-}
+      - FACTORY_API_KEY=${FACTORY_API_KEY:-}
 
 volumes:
   cccc-data:
     external: true
+  cccc-home:

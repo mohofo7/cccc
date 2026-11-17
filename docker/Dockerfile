@@ -71,6 +71,11 @@ RUN mkdir -p /home/cccc/.local/bin \
     && ln -s /usr/local/bin/claude /home/cccc/.local/bin/claude \
     && echo '{"hasCompletedOnboarding":true,"bypassPermissionsModeAccepted":true}' > /home/cccc/.claude.json
 
+# Install Devin CLI for the non-root user (lands in ~/.local/share/devin,
+# launcher symlinked into ~/.local/bin, which is already on PATH)
+RUN curl -fsSL https://cli.devin.ai/install.sh | bash \
+    && devin --version
+
 # Configuration
 ENV CCCC_HOME=/data
 

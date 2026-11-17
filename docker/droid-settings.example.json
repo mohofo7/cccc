@@ -1,0 +1,12 @@
+{
+  "customModels": [
+    {
+      "model": "your-model-id-on-the-gateway",
+      "displayName": "Omni Route",
+      "baseUrl": "${FACTORY_API_URL}",
+      "apiKey": "${FACTORY_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    }
+  ]
+}

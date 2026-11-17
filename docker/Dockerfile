@@ -81,8 +81,11 @@ RUN mkdir -p /home/cccc/.local/bin \
     && echo '{"hasCompletedOnboarding":true,"bypassPermissionsModeAccepted":true}' > /home/cccc/.claude.json
 
 # Install Devin CLI for the non-root user (lands in ~/.local/share/devin,
-# launcher symlinked into ~/.local/bin, which is already on PATH)
-RUN curl -fsSL https://cli.devin.ai/install.sh | bash \
+# launcher symlinked into ~/.local/bin, which is already on PATH).
+# The installer ends by running `devin setup`, an interactive login wizard
+# that exits non-zero without a TTY; the binary install is verified by
+# devin --version below.
+RUN curl -fsSL https://cli.devin.ai/install.sh | bash || true \
     && devin --version
 
 # Install Antigravity CLI (agy) for the non-root user
